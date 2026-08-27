@@ -106,14 +106,14 @@
     import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { getFirestore, collection, doc, setDoc, getDocs, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // Инициализация Firebase (Твои ключи)
+    // Точная конфигурация твоей Firebase
     const firebaseConfig = {
-      apiKey: "AIzaSy...", // Не забудь вставить свой реальный apiKey если менял
+      apiKey: "AIzaSyB8abx-xLG-SUevMlLXVq8ITjHZLkfmacY", // Скопируй из Firebase (начинается на AIzaSy...)
       authDomain: "masenger-656fe.firebaseapp.com",
       projectId: "masenger-656fe",
       storageBucket: "masenger-656fe.appspot.com",
-      messagingSenderId: "312061552783",
-      appId: "1:312061552783:web:..."
+      messagingSenderId: "312081552783",
+      appId: "1:312081552783:web:510a48913bd360c5dd67fa"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -128,7 +128,6 @@
     let currentCall = null;
     let localStream = null;
 
-    // Проверка результата редиректа
     getRedirectResult(auth).catch(console.error);
 
     onAuthStateChanged(auth, async (user) => {
@@ -138,7 +137,6 @@
         document.getElementById('login-btn').classList.add('hidden');
         document.getElementById('logout-btn').classList.remove('hidden');
         
-        // Сохраняем пользователя в базу для поиска
         await setDoc(doc(db, "users", user.uid), {
           uid: user.uid,
           name: user.displayName || "Аноним",
@@ -156,9 +154,7 @@
       }
     });
 
-    // Функция входа
     window.login = function() {
-      // На мобильных используем popup или redirect
       if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
         signInWithRedirect(auth, provider);
       } else {
@@ -169,14 +165,12 @@
       }
     }
 
-    // Функция выхода
     window.logout = function() {
       signOut(auth).then(() => {
         location.reload();
       });
     }
 
-    // Загрузка зарегистрированных пользователей
     async function loadUsers() {
       try {
         const querySnapshot = await getDocs(collection(db, "users"));
@@ -191,7 +185,6 @@
       }
     }
 
-    // Поиск пользователей
     window.searchUsers = function() {
       const text = document.getElementById('search-input').value.toLowerCase();
       const resultsContainer = document.getElementById('search-results');
@@ -212,7 +205,6 @@
       });
     }
 
-    // Открытие чата
     window.openChat = function(chatId, chatName) {
       currentChatId = chatId;
       document.getElementById('current-chat-title').innerText = chatName;
@@ -245,14 +237,12 @@
       });
     }
 
-    // Загрузка сообщений для бота
     function loadAiMessages() {
       const container = document.getElementById('messages');
       container.innerHTML = '';
       renderMessage("Привет! Я Sera AI — твой личный ИИ-помощник. Чем могу помочь?", 'their');
     }
 
-    // Отправка текстового сообщения
     window.sendMessage = async function() {
       const input = document.getElementById('msg-input');
       const text = input.value.trim();
@@ -277,7 +267,6 @@
       }
     }
 
-    // Отправка фотографий
     window.sendPhoto = function(input) {
       const file = input.files[0];
       if (!file || !currentChatId) return;
@@ -315,9 +304,8 @@
       container.scrollTop = container.scrollHeight;
     }
 
-    // Gemini AI
     window.setApiKey = function() {
-      const key = prompt("Вставьте ваш API Key Gemini (бесплатно в Google AI Studio):");
+      const key = prompt("Вставьте ваш API Key Gemini:");
       if (key) {
         localStorage.setItem('gemini_api_key', key);
         alert("Ключ успешно сохранен!");
@@ -341,7 +329,6 @@
       }
     }
 
-    // PeerJS Звонки
     function initPeerJS() {
       if (!currentUser) return;
       peer = new Peer(currentUser.uid);
@@ -386,4 +373,3 @@
   </script>
 </body>
 </html>
-
