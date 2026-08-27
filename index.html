@@ -195,7 +195,6 @@
     import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { getFirestore, collection, doc, setDoc, getDoc, getDocs, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // Firebase Configuration с твоими ключами
     const firebaseConfig = {
       apiKey: "AIzaSyB8abx-xLG-SUevMlLXVq8ITjHZLkfmacY",
       authDomain: "masenger-656fe.firebaseapp.com",
@@ -208,7 +207,12 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
+    
+    // Включаем принудительный выбор аккаунта Google
     const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({
+      prompt: 'select_account'
+    });
 
     let currentUser = null;
     let currentChatId = null;
@@ -258,7 +262,9 @@
     }
 
     window.logout = function() {
-      signOut(auth).then(() => location.reload());
+      signOut(auth).then(() => {
+        location.reload();
+      });
     }
 
     async function loadUsersAndGroups() {
@@ -684,3 +690,4 @@
   </script>
 </body>
 </html>
+
