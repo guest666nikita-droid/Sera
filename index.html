@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sera Messenger</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
+        body { background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .hidden { display: none !important; }
+
+        /* Вход */
+        #login-screen { background: #fff; padding: 40px; border-radius: 12px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 320px; }
+        #login-screen h1 { color: #0084ff; font-size: 32px; margin-bottom: 8px; }
+        #login-screen p { color: #666; font-size: 14px; margin-bottom: 24px; }
+        .btn-google { background: #4285f4; color: #fff; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-size: 15px; }
+        .btn-google:hover { background: #3367d6; }
+
+        /* Главный экран */
+        #app { display: flex; width: 950px; height: 85vh; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        .sidebar { width: 320px; border-right: 1px solid #e6e6e6; display: flex; flex-direction: column; background: #fff; }
+        .profile-bar { padding: 15px; background: #f8f9fa; border-bottom: 1px solid #e6e6e6; display: flex; justify-content: space-between; align-items: center; }
+        .profile-name { font-weight: bold; font-size: 15px; color: #333; }
+        .btn-settings { background: none; border: none; cursor: pointer; font-size: 18px; }
+        
+        .chat-area { flex: 1; display: flex; flex-direction: column; background: #f9fbfd; }
+        .chat-header { padding: 16px; background: #fff; border-bottom: 1px solid #e6e6e6; font-weight: bold; }
+        .chat-messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .msg { max-width: 65%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.4; word-wrap: break-word; }
+        .msg.incoming { background: #fff; align-self: flex-start; border: 1px solid #e0e0e0; color: #333; }
+        .msg.outgoing { background: #0084ff; color: #fff; align-self: flex-end; }
+        .chat-input { padding: 15px; background: #fff; border-top: 1px solid #e6e6e6; display: flex; gap: 10px; }
+        .chat-input input { flex: 1; padding: 10px 15px; border: 1px solid #ddd; border-radius: 20px; outline: none; font-size: 14px; }
+        .btn-send { background: #0084ff; color: #fff; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; font-weight: bold; }
+
+        /* Окно настроек */
+        #settings-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; }
+        .modal-box { background: #fff; padding: 25px; border-radius: 10px; width: 320px; }
+        .modal-box input { width: 100%; padding: 10px; margin: 15px 0; border: 1px solid #ccc; border-radius: 6px; outline: none; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+        .modal-actions button { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+        .btn-save { background: #0084ff; color: white; }
+        .btn-cancel { background: #eee; }
+    </style>
+</head>
+<body>
+
+    <!-- 1. Экран входа -->
+    <div id="login-screen">
+        <h1>Sera</h1>
+        <p>Онлайн мессенджер</p>
+        <button class="btn-google" onclick="loginWithGoogle()">Войти через Google</button>
+    </div>
+
+    <!-- 2. Главное окно -->
+    <div id="app" class="hidden">
+        <div class="sidebar">
+            <div class="profile-bar">
+                <span id="user-display-name" class="profile-name">Пользователь</span>
+                <button class="btn-settings" onclick="openSettings()" title="Изменить имя">⚙️</button>
+            </div>
+            <div style="padding: 15px; font-size: 13px; color: #777;">Общий чат Sera</div>
+        </div>
+
+        <div class="chat-area">
+            <div class="chat-header">Общая комната</div>
+            <div class="chat-messages" id="messages-container"></div>
+            <div class="chat-input">
+                <input type="text" id="message-text" placeholder="Напишите сообщение..." onkeydown="if(event.key==='Enter') sendMessage()">
+                <button class="btn-send" onclick="sendMessage()">Отправить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Настройки профиля -->
+    <div id="settings-modal" class="hidden">
+        <div class="modal-box">
+            <h3 style="margin-bottom: 10px;">Кастомное имя</h3>
+            <input type="text" id="custom-name-input" placeholder="Введите новое имя">
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeSettings()">Отмена</button>
+                <button class="btn-save" onclick="saveCustomName()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Твои реальные данные из Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyB8abx-xLG-SUevMlLXVq8ITjHZLkfmacY",
+            authDomain: "masenger-656fe.firebaseapp.com",
+            projectId: "masenger-656fe",
+            storageBucket: "masenger-656fe.firebasestorage.app",
+            messagingSenderId: "312081552783",
+            appId: "1:312081552783:web:510a48913bd360c5dd67fa",
+            measurementId: "G-JTWGWG0R86"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        let currentUser = null;
+
+        window.loginWithGoogle = async () => {
+            try {
+                const result = await signInWithPopup(auth, provider);
+                currentUser = result.user;
+                document.getElementById('user-display-name').innerText = currentUser.displayName;
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('app').classList.remove('hidden');
+                listenForMessages();
+            } catch (error) {
+                alert("Ошибка входа: " + error.message);
+            }
+        };
+
+        function listenForMessages() {
+            const q = query(collection(db, "messages"), orderBy("timestamp", "asc"));
+            onSnapshot(q, (snapshot) => {
+                const container = document.getElementById('messages-container');
+                container.innerHTML = '';
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const msgDiv = document.createElement('div');
+                    const isMe = currentUser && data.uid === currentUser.uid;
+                    
+                    msgDiv.className = isMe ? 'msg outgoing' : 'msg incoming';
+                    msgDiv.innerText = `${data.senderName || 'Пользователь'}: ${data.text}`;
+                    container.appendChild(msgDiv);
+                });
+                container.scrollTop = container.scrollHeight;
+            });
+        }
+
+        window.sendMessage = async () => {
+            const input = document.getElementById('message-text');
+            const text = input.value.trim();
+            if (!text || !currentUser) return;
+
+            await addDoc(collection(db, "messages"), {
+                text: text,
+                senderName: currentUser.displayName,
+                uid: currentUser.uid,
+                timestamp: serverTimestamp()
+            });
+
+            input.value = '';
+        };
+
+        window.saveCustomName = async () => {
+            const newName = document.getElementById('custom-name-input').value.trim();
+            if (newName && currentUser) {
+                await updateProfile(currentUser, { displayName: newName });
+                document.getElementById('user-display-name').innerText = newName;
+            }
+            closeSettings();
+        };
+
+        window.openSettings = () => document.getElementById('settings-modal').classList.remove('hidden');
+        window.closeSettings = () => document.getElementById('settings-modal').classList.add('hidden');
+    </script>
+</body>
+</html>
+
