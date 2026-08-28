@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="120" height="120">
+  <defs>
+    <linearGradient id="bgGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+
+    <linearGradient id="seraGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#38bdf8" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="120" fill="url(#bgGlow)"/>
+  
+  <g filter="url(#glow)">
+    <path d="M 140 150 
+             C 140 110, 370 110, 370 150 
+             L 370 310 
+             C 370 350, 240 350, 200 350 
+             L 140 400 
+             L 155 342 
+             C 140 330, 140 320, 140 310 Z" 
+          fill="url(#seraGradient)"/>
+
+    <path d="M 290 190 
+             C 230 170, 210 220, 256 240 
+             C 310 260, 290 310, 220 295" 
+          stroke="#ffffff" 
+          stroke-width="26" 
+          stroke-linecap="round" 
+          fill="none"/>
+  </g>
+</svg>
