@@ -4,697 +4,364 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sera Messenger</title>
-  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <!-- Firebase SDK (Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
-    body { background: #121212; color: #fff; display: flex; height: 100vh; overflow: hidden; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+    body { background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    #app { width: 100%; max-width: 900px; height: 90vh; background: #fff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); overflow: hidden; display: flex; }
     
-    /* Sidebar / Navigation */
-    .sidebar { width: 340px; background: #1e1e1e; border-right: 1px solid #333; display: flex; flex-direction: column; width: 100%; max-width: 340px; }
-    .header { padding: 12px 15px; background: #252525; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; font-size: 14px; }
-    .user-info { display: flex; align-items: center; gap: 8px; font-weight: 600; }
-    .search-box { padding: 10px; background: #1e1e1e; }
-    .search-box input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #444; background: #2a2a2a; color: #fff; outline: none; }
+    /* Login Screen */
+    #login-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; height: 100%; gap: 20px; }
+    #login-screen h1 { color: #007bff; font-size: 32px; }
+    .btn-google { background: #4285f4; color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 6px; cursor: pointer; }
+
+    /* Main Interface */
+    #main-screen { display: none; width: 100%; height: 100%; }
     
-    .chat-list { flex: 1; overflow-y: auto; }
-    .chat-item { padding: 12px 15px; display: flex; align-items: center; gap: 12px; cursor: pointer; border-bottom: 1px solid #282828; }
-    .chat-item:hover, .chat-item.active { background: #2c2c2c; }
-    .avatar { width: 42px; height: 42px; border-radius: 50%; background: #007bff; display: flex; align-items: center; justify-content: center; font-weight: bold; overflow: hidden; flex-shrink: 0; }
-    .avatar img { width: 100%; height: 100%; object-fit: cover; }
+    /* Sidebar */
+    .sidebar { width: 320px; border-right: 1px solid #ddd; display: flex; flex-direction: column; height: 100%; }
+    .sidebar-header { padding: 15px; background: #f8f9fa; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; }
+    .search-box { padding: 10px; border-bottom: 1px solid #ddd; display: flex; gap: 5px; }
+    .search-box input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+    .search-box button { padding: 8px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    .contact-list { flex: 1; overflow-y: auto; }
+    .contact-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+    .contact-item:hover { background: #f5f5f5; }
+    .unread-badge { background: #28a745; color: white; border-radius: 50%; padding: 2px 8px; font-size: 12px; font-weight: bold; }
 
-    /* Main Chat Area */
-    .main-chat { flex: 1; display: flex; flex-direction: column; background: #181818; position: relative; }
-    .chat-header { padding: 12px 15px; background: #252525; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
-    .chat-header-info { display: flex; align-items: center; gap: 10px; }
-    .back-btn { background: none; border: none; color: #007bff; font-size: 22px; cursor: pointer; padding: 0 5px; }
-
-    .header-actions { display: flex; align-items: center; gap: 8px; position: relative; }
-    .btn { padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; background: #007bff; color: #fff; font-size: 13px; }
-    .btn-secondary { background: #444; }
-    .btn-danger { background: #dc3545; }
-    .btn-icon { background: transparent; border: none; color: #fff; font-size: 20px; cursor: pointer; padding: 4px 8px; border-radius: 4px; }
-    .btn-icon:hover { background: #333; }
+    /* Chat Area */
+    .chat-area { flex: 1; display: flex; flex-direction: column; height: 100%; position: relative; }
+    .chat-header { padding: 12px 15px; background: #f8f9fa; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
+    .header-left { display: flex; align-items: center; gap: 10px; }
+    .back-btn { background: none; border: none; font-size: 20px; cursor: pointer; margin-right: 5px; }
+    .header-actions { display: flex; align-items: center; gap: 12px; position: relative; }
+    .action-btn { background: none; border: none; font-size: 18px; cursor: pointer; }
+    
+    /* Dropdown Menu */
+    .dropdown { position: absolute; top: 30px; right: 0; background: white; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: none; flex-direction: column; z-index: 100; }
+    .dropdown button { padding: 10px 15px; background: none; border: none; text-align: left; cursor: pointer; width: 100%; }
+    .dropdown button:hover { background: #f0f0f0; }
 
     /* Messages List */
-    .messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-    .msg { max-width: 75%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.4; word-break: break-word; }
-    .msg.my { align-self: flex-end; background: #007bff; color: #fff; }
-    .msg.their { align-self: flex-start; background: #2a2a2a; color: #fff; }
-    .msg img, .msg video { max-width: 100%; border-radius: 8px; margin-top: 5px; }
-    .msg-author { font-size: 11px; color: #aaa; margin-bottom: 3px; font-weight: 600; }
+    .messages-container { flex: 1; padding: 15px; overflow-y: auto; background: #efeae2; display: flex; flex-direction: column; gap: 10px; }
+    .message { max-width: 65%; padding: 8px 12px; border-radius: 8px; font-size: 14px; word-wrap: break-word; }
+    .message.sent { background: #dcf8c6; align-self: flex-end; }
+    .message.received { background: white; align-self: flex-start; }
 
-    .input-area { padding: 12px 15px; background: #252525; display: flex; gap: 8px; align-items: center; }
-    .input-area input[type="text"] { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #444; background: #1e1e1e; color: #fff; outline: none; }
-
-    /* Dropdown 3 Dots Menu */
-    .dropdown-menu { position: absolute; top: 40px; right: 0; background: #2a2a2a; border: 1px solid #444; border-radius: 8px; display: none; flex-direction: column; width: 160px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
-    .dropdown-menu button { padding: 10px 14px; background: none; border: none; color: #fff; text-align: left; cursor: pointer; font-size: 13px; }
-    .dropdown-menu button:hover { background: #3a3a3a; }
-
-    /* Modals & Overlays */
-    .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000; }
-    .modal-content { background: #252525; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; }
-    .modal-content input[type="text"] { width: 100%; padding: 10px; background: #1e1e1e; border: 1px solid #444; color: #fff; border-radius: 6px; }
-    .user-select-list { max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
-    .user-select-item { display: flex; align-items: center; gap: 10px; padding: 6px; background: #1e1e1e; border-radius: 6px; }
-
-    /* Call Overlay */
-    .call-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
-    .videos { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
-    video { width: 280px; height: 210px; background: #000; border-radius: 12px; object-fit: cover; }
+    /* Input Area */
+    .chat-input { padding: 10px; background: #f8f9fa; border-top: 1px solid #ddd; display: flex; gap: 8px; align-items: center; }
+    .chat-input input[type="text"] { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 20px; outline: none; }
+    .chat-input button { padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 20px; cursor: pointer; }
     
-    .hidden { display: none !important; }
-
-    /* Responsive Views */
     @media (max-width: 768px) {
-      .sidebar { max-width: 100%; }
-      .main-chat { display: none; }
-      body.chat-open .sidebar { display: none; }
-      body.chat-open .main-chat { display: flex; width: 100%; }
+      .sidebar { width: 100%; }
+      .chat-area { display: none; width: 100%; }
+      .chat-area.active { display: flex; }
+      .sidebar.hidden { display: none; }
     }
   </style>
 </head>
 <body>
 
-  <div class="sidebar">
-    <div class="header">
-      <div class="user-info">
-        <span id="user-display">Гость</span>
-      </div>
-      <div style="display: flex; gap: 5px;">
-        <button class="btn btn-secondary" onclick="openCreateGroupModal()" id="create-group-btn">＋ Группа</button>
-        <button class="btn btn-secondary" onclick="setApiKey()">Ключ ИИ</button>
-        <button class="btn hidden" id="login-btn" onclick="login()">Войти</button>
-        <button class="btn btn-danger hidden" id="logout-btn" onclick="logout()">Выйти</button>
-      </div>
-    </div>
-    <div class="search-box">
-      <input type="text" id="search-input" placeholder="Поиск контактов..." oninput="searchUsers()">
-    </div>
-    <div class="chat-list" id="chat-list">
-      <div class="chat-item" onclick="openChat('ai_bot', 'Sera AI (Бот)', false)">
-        <div class="avatar" style="background:#6f42c1;">🤖</div>
-        <div><strong>Sera AI (Бот)</strong><br><small style="color:#aaa;">Нейросеть</small></div>
-      </div>
-      <div id="chats-and-users"></div>
-    </div>
+<div id="app">
+  <!-- Экран Входа -->
+  <div id="login-screen">
+    <h1>Sera</h1>
+    <button class="btn-google" onclick="loginWithGoogle()">Войти через Google</button>
   </div>
 
-  <div class="main-chat">
-    <div class="chat-header">
-      <div class="chat-header-info">
-        <button class="back-btn" onclick="closeChat()">←</button>
-        <div class="avatar" id="chat-avatar">?</div>
-        <div>
-          <h3 id="current-chat-title" style="font-size: 16px;">Выберите контакт</h3>
-          <small id="chat-subtext" style="color:#aaa; font-size:12px;"></small>
+  <!-- Главный экран -->
+  <div id="main-screen">
+    <!-- Список контактов -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <b id="user-display-name">Sera User</b>
+        <button onclick="logout()" style="border:none; background:none; color:red; cursor:pointer;">Выйти</button>
+      </div>
+      <div class="search-box">
+        <input type="email" id="search-email" placeholder="Поиск по Google email...">
+        <button onclick="searchUser()">Найти</button>
+      </div>
+      <div class="contact-list" id="contact-list"></div>
+    </div>
+
+    <!-- Чат -->
+    <div class="chat-area" id="chat-area">
+      <div class="chat-header">
+        <div class="header-left">
+          <button class="back-btn" onclick="closeChat()">←</button>
+          <span id="active-contact-name" style="font-weight:bold;">Выберите чат</span>
+        </div>
+        <div class="header-actions">
+          <button class="action-btn" title="Обычный звонок" onclick="alert('Вызов голосом...')">📞</button>
+          <button class="action-btn" title="Видеозвонок" onclick="alert('Видеовызов...')">📹</button>
+          <button class="action-btn" onclick="toggleMenu()">⋮</button>
+          <div class="dropdown" id="dropdown-menu">
+            <button id="block-btn" onclick="blockUser()">Заблокировать</button>
+            <button id="unblock-btn" onclick="unblockUser()">Разблокировать</button>
+          </div>
         </div>
       </div>
 
-      <div class="header-actions">
-        <button class="btn btn-secondary hidden" id="group-members-btn" onclick="showGroupMembers()">👥 +</button>
-        <div class="call-btns hidden" id="call-btns">
-          <button class="btn btn-secondary" onclick="startCall(false)">📞</button>
-          <button class="btn" onclick="startCall(true)">📹</button>
-        </div>
-        <button class="btn-icon" onclick="toggleMenu()">⋮</button>
-        
-        <div class="dropdown-menu" id="dropdown-menu">
-          <button onclick="blockUser()">🚫 Заблокировать</button>
-        </div>
-      </div>
-    </div>
+      <div class="messages-container" id="messages-container"></div>
 
-    <div class="messages" id="messages"></div>
-
-    <div class="input-area hidden" id="input-area">
-      <label class="btn btn-secondary" title="Отправить фото" style="cursor:pointer;">
-        📷 <input type="file" id="photo-input" accept="image/*" style="display:none;" onchange="sendPhoto(this)">
-      </label>
-      <button class="btn btn-secondary" title="Записать видео" onclick="openVideoRecorderModal()">🎥</button>
-      <input type="text" id="msg-input" placeholder="Напишите сообщение..." onkeydown="if(event.key==='Enter') sendMessage()">
-      <button class="btn" onclick="sendMessage()">Отправить</button>
-    </div>
-  </div>
-
-  <div class="modal" id="create-group-modal">
-    <div class="modal-content">
-      <h3>Создать Групповой Чат</h3>
-      <input type="text" id="group-name-input" placeholder="Название группы...">
-      <input type="text" id="group-avatar-input" placeholder="Ссылка на аватарку (необязательно)...">
-      <label style="font-size: 13px; font-weight:600;">Выберите участников:</label>
-      <div class="user-select-list" id="group-user-select-list"></div>
-      <div style="display: flex; justify-content: flex-end; gap: 8px;">
-        <button class="btn btn-secondary" onclick="closeModal('create-group-modal')">Отмена</button>
-        <button class="btn" onclick="createGroupChat()">Создать</button>
+      <div class="chat-input" id="chat-input-bar">
+        <label style="cursor:pointer; font-size: 20px;" title="Отправить фото/видео с камеры">
+          📷
+          <input type="file" id="media-input" accept="image/*,video/*" capture="user" style="display:none;" onchange="sendMedia(this)">
+        </label>
+        <input type="text" id="message-text" placeholder="Сообщение..." onkeypress="if(event.key==='Enter') sendMessage()">
+        <button onclick="sendMessage()">Отправить</button>
       </div>
     </div>
   </div>
+</div>
 
-  <div class="modal" id="video-recorder-modal">
-    <div class="modal-content" style="align-items: center;">
-      <h3>Запись видеосообщения</h3>
-      <video id="record-preview" autoplay muted style="width:100%; height:200px; border-radius:8px;"></video>
-      <div style="display:flex; gap:10px;">
-        <button class="btn" id="start-rec-btn" onclick="startRecording()">🔴 Запись</button>
-        <button class="btn btn-danger hidden" id="stop-rec-btn" onclick="stopRecording()">⏹️ Стоп</button>
-      </div>
-      <div style="display:flex; gap:10px; width:100%; justify-content: flex-end;">
-        <button class="btn btn-secondary" onclick="closeVideoRecorder()">Закрыть</button>
-      </div>
-    </div>
-  </div>
+<script>
+  // Конфигурация Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyB8abx-xLG-SUevMlLXVq8ITjHZLkfmacY",
+    authDomain: "masenger-656fe.firebaseapp.com",
+    projectId: "masenger-656fe",
+    storageBucket: "masenger-656fe.firebasestorage.app",
+    messagingSenderId: "312081552783",
+    appId: "1:312081552783:web:510a48913bd360c5dd67fa",
+    measurementId: "G-JTWGWG0R86"
+  };
 
-  <div class="modal" id="group-members-modal">
-    <div class="modal-content">
-      <h3>Участники группы</h3>
-      <div class="user-select-list" id="members-list-container"></div>
-      <button class="btn btn-secondary" onclick="closeModal('group-members-modal')">Закрыть</button>
-    </div>
-  </div>
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
 
-  <div class="call-overlay" id="call-overlay">
-    <div class="videos" id="video-container">
-      <video id="local-video" autoplay muted></video>
-    </div>
-    <button class="btn btn-danger" onclick="endCall()">Завершить звонок</button>
-  </div>
+  let currentUser = null;
+  let activeContact = null;
+  let messagesUnsubscribe = null;
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, collection, doc, setDoc, getDoc, getDocs, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  function loginWithGoogle() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider).catch(err => alert("Ошибка входа: " + err.message));
+  }
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyB8abx-xLG-SUevMlLXVq8ITjHZLkfmacY",
-      authDomain: "masenger-656fe.firebaseapp.com",
-      projectId: "masenger-656fe",
-      storageBucket: "masenger-656fe.appspot.com",
-      messagingSenderId: "312081552783",
-      appId: "1:312081552783:web:510a48913bd360c5dd67fa"
-    };
+  function logout() {
+    auth.signOut();
+  }
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    
-    const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' });
+  auth.onAuthStateChanged(async (user) => {
+    if (user) {
+      currentUser = user;
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('main-screen').style.display = 'flex';
+      document.getElementById('user-display-name').innerText = user.displayName || user.email;
 
-    let currentUser = null;
-    let currentChatId = null;
-    let isCurrentGroup = false;
-    let currentGroupData = null;
-    let allUsers = [];
-    let peer = null;
-    let currentCall = null;
-    let localStream = null;
-    let mediaRecorder = null;
-    let recordedChunks = [];
+      await db.collection('users').doc(user.uid).set({
+        uid: user.uid,
+        email: user.email.toLowerCase(),
+        displayName: user.displayName || user.email,
+        photoURL: user.photoURL || ''
+      }, { merge: true });
 
-    // Подхватываем результат редиректа после перенаправления авторизации Google
-    getRedirectResult(auth).then((result) => {
-      if (result && result.user) {
-        console.log("Успешный вход через редирект:", result.user);
-      }
-    }).catch((err) => {
-      console.error("Ошибка редиректа:", err);
-    });
+      loadContacts();
+    } else {
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('main-screen').style.display = 'none';
+    }
+  });
 
-    // Отслеживаем статус авторизации (для новых и уже зарегистрированных пользователей)
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        currentUser = user;
-        document.getElementById('user-display').innerText = user.displayName || user.email || 'Профиль';
-        document.getElementById('login-btn').classList.add('hidden');
-        document.getElementById('logout-btn').classList.remove('hidden');
-        
-        // Безопасная запись данных профиля с поддержкой существующих аккаунтов
-        try {
-          await setDoc(doc(db, "users", user.uid), {
-            uid: user.uid,
-            name: user.displayName || "Аноним",
-            email: user.email,
-            photoURL: user.photoURL || ""
-          }, { merge: true });
-        } catch (e) {
-          console.error("Ошибка Firestore:", e);
-        }
+  async function searchUser() {
+    const emailInput = document.getElementById('search-email').value.trim().toLowerCase();
+    if (!emailInput || emailInput === currentUser.email) return;
 
-        try { initPeerJS(); } catch(e) {}
-        loadUsersAndGroups();
-      } else {
-        currentUser = null;
-        document.getElementById('user-display').innerText = 'Гость';
-        document.getElementById('login-btn').classList.remove('hidden');
-        document.getElementById('logout-btn').classList.add('hidden');
-      }
-    });
-
-    // Универсальный метод входа: сперва Popup, при сбое — Redirect
-    window.login = async function() {
-      try {
-        await signInWithPopup(auth, provider);
-      } catch (error) {
-        console.warn("Popup не ответил или заблокирован, переключаемся на Redirect...", error);
-        if (error.code === 'auth/unauthorized-domain') {
-          alert("Ошибка: Добавьте домен GitHub Pages в Authorized Domains в Firebase Console!");
-        } else {
-          try {
-            await signInWithRedirect(auth, provider);
-          } catch (redirErr) {
-            alert("Не удалось запустить вход: " + redirErr.message);
-          }
-        }
-      }
-    };
-
-    window.logout = function() {
-      signOut(auth).then(() => {
-        location.reload();
-      });
-    };
-
-    async function loadUsersAndGroups() {
-      if (!currentUser) return;
-      
-      onSnapshot(collection(db, "users"), (snapshot) => {
-        allUsers = [];
-        snapshot.forEach((docSnap) => {
-          if (docSnap.id !== currentUser.uid) {
-            allUsers.push(docSnap.data());
-          }
-        });
-        renderChatList();
-      });
-
-      onSnapshot(collection(db, "groups"), (snapshot) => {
-        renderChatList();
-      });
+    const query = await db.collection('users').where('email', '==', emailInput).get();
+    if (query.empty) {
+      alert('Пользователь не найден!');
+      return;
     }
 
-    async function renderChatList() {
-      const container = document.getElementById('chats-and-users');
-      container.innerHTML = '';
+    const foundUser = query.docs[0].data();
+    openChat(foundUser);
+  }
 
-      const groupsSnap = await getDocs(collection(db, "groups"));
-      groupsSnap.forEach(docSnap => {
-        const group = docSnap.data();
-        if (group.members && group.members.includes(currentUser.uid)) {
-          const item = document.createElement('div');
-          item.className = 'chat-item';
-          item.onclick = () => openChat(docSnap.id, group.name, true, group);
-          item.innerHTML = `
-            <div class="avatar" style="background:#28a745;">${group.avatar ? `<img src="${group.avatar}">` : '👥'}</div>
-            <div><strong>${group.name}</strong><br><small style="color:#aaa;">Групповой чат</small></div>
-          `;
-          container.appendChild(item);
-        }
-      });
+  function loadContacts() {
+    db.collection('chats')
+      .where('participants', 'array-contains', currentUser.uid)
+      .onSnapshot(async (snapshot) => {
+        const contactList = document.getElementById('contact-list');
+        contactList.innerHTML = '';
 
-      allUsers.forEach(u => {
-        const item = document.createElement('div');
-        item.className = 'chat-item';
-        item.onclick = () => openChat(u.uid, u.name, false, u);
-        item.innerHTML = `
-          <div class="avatar">${u.photoURL ? `<img src="${u.photoURL}">` : (u.name ? u.name[0] : '?')}</div>
-          <div><strong>${u.name || 'Пользователь'}</strong></div>
-        `;
-        container.appendChild(item);
-      });
-    }
-
-    window.openChat = function(chatId, chatName, isGroup = false, data = null) {
-      currentChatId = chatId;
-      isCurrentGroup = isGroup;
-      currentGroupData = data;
-
-      document.body.classList.add('chat-open');
-      document.getElementById('current-chat-title').innerText = chatName;
-      document.getElementById('input-area').classList.remove('hidden');
-
-      const avatarEl = document.getElementById('chat-avatar');
-      if (isGroup && data && data.avatar) {
-        avatarEl.innerHTML = `<img src="${data.avatar}">`;
-      } else if (!isGroup && data && data.photoURL) {
-        avatarEl.innerHTML = `<img src="${data.photoURL}">`;
-      } else {
-        avatarEl.innerText = chatName ? chatName[0] : '?';
-      }
-
-      if (chatId === 'ai_bot') {
-        document.getElementById('call-btns').classList.add('hidden');
-        document.getElementById('group-members-btn').classList.add('hidden');
-        loadAiMessages();
-      } else if (isGroup) {
-        document.getElementById('call-btns').classList.remove('hidden');
-        document.getElementById('group-members-btn').classList.remove('hidden');
-        listenForGroupMessages();
-      } else {
-        document.getElementById('call-btns').classList.remove('hidden');
-        document.getElementById('group-members-btn').classList.add('hidden');
-        listenForDirectMessages();
-      }
-    }
-
-    window.closeChat = function() {
-      document.body.classList.remove('chat-open');
-    }
-
-    let unsubscribe = null;
-    function listenForDirectMessages() {
-      if (!currentUser) return;
-      if (unsubscribe) unsubscribe();
-      const chatIdPair = [currentUser.uid, currentChatId].sort().join('_');
-      const q = query(collection(db, "chats", chatIdPair, "messages"), orderBy("timestamp", "asc"));
-      
-      unsubscribe = onSnapshot(q, (snapshot) => {
-        const container = document.getElementById('messages');
-        container.innerHTML = '';
-        snapshot.forEach((docSnap) => {
-          const d = docSnap.data();
-          renderMessage(d.text, d.senderId === currentUser.uid ? 'my' : 'their', d.image, d.video);
-        });
-        container.scrollTop = container.scrollHeight;
-      });
-    }
-
-    function listenForGroupMessages() {
-      if (!currentUser) return;
-      if (unsubscribe) unsubscribe();
-      const q = query(collection(db, "groups", currentChatId, "messages"), orderBy("timestamp", "asc"));
-      
-      unsubscribe = onSnapshot(q, (snapshot) => {
-        const container = document.getElementById('messages');
-        container.innerHTML = '';
-        snapshot.forEach((docSnap) => {
-          const d = docSnap.data();
-          renderMessage(d.text, d.senderId === currentUser.uid ? 'my' : 'their', d.image, d.video, d.senderName);
-        });
-        container.scrollTop = container.scrollHeight;
-      });
-    }
-
-    function loadAiMessages() {
-      const container = document.getElementById('messages');
-      container.innerHTML = '';
-      renderMessage("Привет! Я Sera AI. Чем могу помочь?", 'their');
-    }
-
-    window.sendMessage = async function() {
-      const input = document.getElementById('msg-input');
-      const text = input.value.trim();
-      if (!text || !currentChatId) return;
-      input.value = '';
-
-      if (currentChatId === 'ai_bot') {
-        renderMessage(text, 'my');
-        const aiReply = await queryGeminiAI(text);
-        renderMessage(aiReply, 'their');
-      } else if (isCurrentGroup) {
-        await addDoc(collection(db, "groups", currentChatId, "messages"), {
-          senderId: currentUser.uid,
-          senderName: currentUser.displayName || 'Аноним',
-          text: text,
-          timestamp: serverTimestamp()
-        });
-      } else {
-        const chatIdPair = [currentUser.uid, currentChatId].sort().join('_');
-        await addDoc(collection(db, "chats", chatIdPair, "messages"), {
-          senderId: currentUser.uid,
-          text: text,
-          timestamp: serverTimestamp()
-        });
-      }
-    }
-
-    window.sendPhoto = function(input) {
-      const file = input.files[0];
-      if (!file || !currentChatId) return;
-
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const base64Img = e.target.result;
-        if (isCurrentGroup) {
-          await addDoc(collection(db, "groups", currentChatId, "messages"), {
-            senderId: currentUser.uid,
-            senderName: currentUser.displayName || 'Аноним',
-            image: base64Img,
-            timestamp: serverTimestamp()
-          });
-        } else {
-          const chatIdPair = [currentUser.uid, currentChatId].sort().join('_');
-          await addDoc(collection(db, "chats", chatIdPair, "messages"), {
-            senderId: currentUser.uid,
-            image: base64Img,
-            timestamp: serverTimestamp()
-          });
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-
-    function renderMessage(text, side, image = null, video = null, author = null) {
-      const container = document.getElementById('messages');
-      const msg = document.createElement('div');
-      msg.className = `msg ${side}`;
-      
-      if (author && side === 'their') {
-        const authorEl = document.createElement('div');
-        authorEl.className = 'msg-author';
-        authorEl.innerText = author;
-        msg.appendChild(authorEl);
-      }
-
-      if (text) {
-        const span = document.createElement('span');
-        span.innerText = text;
-        msg.appendChild(span);
-      }
-      if (image) {
-        const img = document.createElement('img');
-        img.src = image;
-        msg.appendChild(img);
-      }
-      if (video) {
-        const vid = document.createElement('video');
-        vid.src = video;
-        vid.controls = true;
-        msg.appendChild(vid);
-      }
-      container.appendChild(msg);
-      container.scrollTop = container.scrollHeight;
-    }
-
-    window.toggleMenu = function() {
-      const menu = document.getElementById('dropdown-menu');
-      menu.style.display = (menu.style.display === 'flex') ? 'none' : 'flex';
-    }
-
-    window.blockUser = function() {
-      alert("Пользователь заблокирован.");
-      document.getElementById('dropdown-menu').style.display = 'none';
-    }
-
-    window.openCreateGroupModal = function() {
-      if (!currentUser) { alert("Сначала войдите!"); return; }
-      const list = document.getElementById('group-user-select-list');
-      list.innerHTML = '';
-      allUsers.forEach(u => {
-        const item = document.createElement('div');
-        item.className = 'user-select-item';
-        item.innerHTML = `
-          <input type="checkbox" value="${u.uid}" class="group-user-checkbox">
-          <span>${u.name}</span>
-        `;
-        list.appendChild(item);
-      });
-      document.getElementById('create-group-modal').style.display = 'flex';
-    }
-
-    window.createGroupChat = async function() {
-      const name = document.getElementById('group-name-input').value.trim();
-      const avatar = document.getElementById('group-avatar-input').value.trim();
-      if (!name) return alert("Введите название группы!");
-
-      const checkboxes = document.querySelectorAll('.group-user-checkbox:checked');
-      const members = [currentUser.uid];
-      checkboxes.forEach(cb => members.push(cb.value));
-
-      await addDoc(collection(db, "groups"), {
-        name: name,
-        avatar: avatar || "",
-        adminId: currentUser.uid,
-        members: members,
-        createdAt: serverTimestamp()
-      });
-
-      closeModal('create-group-modal');
-      renderChatList();
-    }
-
-    window.showGroupMembers = async function() {
-      if (!currentGroupData) return;
-      const list = document.getElementById('members-list-container');
-      list.innerHTML = '';
-      
-      for (let uid of currentGroupData.members) {
-        let name = "Участник";
-        if (uid === currentUser.uid) name = (currentUser.displayName || "Вы") + " (Вы)";
-        else {
-          const u = allUsers.find(x => x.uid === uid);
-          if (u) name = u.name;
-        }
-
-        const isAdmin = (uid === currentGroupData.adminId);
-        const item = document.createElement('div');
-        item.className = 'user-select-item';
-        item.innerHTML = `<strong>${name}</strong> ${isAdmin ? '<span style="color:#007bff; font-size:12px;">(Администратор)</span>' : ''}`;
-        list.appendChild(item);
-      }
-      document.getElementById('group-members-modal').style.display = 'flex';
-    }
-
-    window.closeModal = function(id) {
-      document.getElementById(id).style.display = 'none';
-    }
-
-    let recStream = null;
-    window.openVideoRecorderModal = async function() {
-      try {
-        recStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        document.getElementById('record-preview').srcObject = recStream;
-        document.getElementById('video-recorder-modal').style.display = 'flex';
-      } catch (e) {
-        alert("Нет доступа к камере!");
-      }
-    }
-
-    window.startRecording = function() {
-      recordedChunks = [];
-      mediaRecorder = new MediaRecorder(recStream);
-      mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
-      mediaRecorder.onstop = async () => {
-        const blob = new Blob(recordedChunks, { type: 'video/webm' });
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          const base64Vid = e.target.result;
-          if (isCurrentGroup) {
-            await addDoc(collection(db, "groups", currentChatId, "messages"), {
-              senderId: currentUser.uid,
-              senderName: currentUser.displayName || 'Аноним',
-              video: base64Vid,
-              timestamp: serverTimestamp()
-            });
-          } else {
-            const chatIdPair = [currentUser.uid, currentChatId].sort().join('_');
-            await addDoc(collection(db, "chats", chatIdPair, "messages"), {
-              senderId: currentUser.uid,
-              video: base64Vid,
-              timestamp: serverTimestamp()
-            });
-          }
-          closeVideoRecorder();
-        };
-        reader.readAsDataURL(blob);
-      };
-      mediaRecorder.start();
-      document.getElementById('start-rec-btn').classList.add('hidden');
-      document.getElementById('stop-rec-btn').classList.remove('hidden');
-    }
-
-    window.stopRecording = function() {
-      if (mediaRecorder) mediaRecorder.stop();
-    }
-
-    window.closeVideoRecorder = function() {
-      if (recStream) recStream.getTracks().forEach(t => t.stop());
-      document.getElementById('start-rec-btn').classList.remove('hidden');
-      document.getElementById('stop-rec-btn').classList.add('hidden');
-      closeModal('video-recorder-modal');
-    }
-
-    window.setApiKey = function() {
-      const key = prompt("Вставьте ваш API Key Gemini:");
-      if (key) {
-        localStorage.setItem('gemini_api_key', key);
-        alert("Ключ сохранён!");
-      }
-    }
-
-    async function queryGeminiAI(promptText) {
-      const apiKey = localStorage.getItem('gemini_api_key');
-      if (!apiKey) return "Укажите API ключ ИИ через кнопку «Ключ ИИ»!";
-      try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
-        });
-        const data = await res.json();
-        return data.candidates[0].content.parts[0].text;
-      } catch (err) {
-        return "Ошибка подключения к ИИ.";
-      }
-    }
-
-    function initPeerJS() {
-      if (!currentUser) return;
-      peer = new Peer(currentUser.uid);
-      
-      peer.on('call', async (call) => {
-        if (confirm("Входящий звонок! Ответить?")) {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-          localStream = stream;
-          document.getElementById('local-video').srcObject = stream;
-          document.getElementById('call-overlay').style.display = 'flex';
+        for (let doc of snapshot.docs) {
+          const chatData = doc.data();
+          const otherUserId = chatData.participants.find(id => id !== currentUser.uid);
           
-          call.answer(stream);
-          call.on('stream', (remoteStream) => {
-            addRemoteVideo(remoteStream);
-          });
-          currentCall = call;
+          if (!otherUserId) continue;
+
+          const userDoc = await db.collection('users').doc(otherUserId).get();
+          if (!userDoc.exists) continue;
+          const userData = userDoc.data();
+
+          const hasUnread = chatData.lastSender !== currentUser.uid && chatData.unread === true;
+
+          const item = document.createElement('div');
+          item.className = 'contact-item';
+          item.onclick = () => openChat(userData);
+          item.innerHTML = `
+            <div>
+              <strong>${userData.displayName}</strong>
+              <div style="font-size:12px; color:#666;">${userData.email}</div>
+            </div>
+            ${hasUnread ? '<span class="unread-badge">NEW</span>' : ''}
+          `;
+          contactList.appendChild(item);
         }
       });
+  }
+
+  async function openChat(contact) {
+    activeContact = contact;
+    document.getElementById('active-contact-name').innerText = contact.displayName;
+    
+    document.getElementById('sidebar').classList.add('hidden');
+    document.getElementById('chat-area').classList.add('active');
+
+    checkBlockStatus();
+
+    const chatId = getChatId(currentUser.uid, activeContact.uid);
+    await db.collection('chats').doc(chatId).set({ unread: false }, { merge: true });
+
+    if (messagesUnsubscribe) messagesUnsubscribe();
+    messagesUnsubscribe = db.collection('chats').doc(chatId)
+      .collection('messages')
+      .orderBy('timestamp', 'asc')
+      .onSnapshot(snapshot => {
+        const container = document.getElementById('messages-container');
+        container.innerHTML = '';
+        snapshot.forEach(doc => {
+          const msg = doc.data();
+          const msgDiv = document.createElement('div');
+          msgDiv.className = `message ${msg.senderId === currentUser.uid ? 'sent' : 'received'}`;
+          
+          if (msg.type === 'text') {
+            msgDiv.innerText = msg.text;
+          } else if (msg.type === 'image') {
+            msgDiv.innerHTML = `<img src="${msg.mediaUrl}" style="max-width:200px; border-radius:6px;">`;
+          } else if (msg.type === 'video') {
+            msgDiv.innerHTML = `<video src="${msg.mediaUrl}" controls style="max-width:200px; border-radius:6px;"></video>`;
+          }
+          
+          container.appendChild(msgDiv);
+        });
+        container.scrollTop = container.scrollHeight;
+      });
+  }
+
+  function closeChat() {
+    document.getElementById('sidebar').classList.remove('hidden');
+    document.getElementById('chat-area').classList.remove('active');
+    activeContact = null;
+    if (messagesUnsubscribe) messagesUnsubscribe();
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById('message-text');
+    const text = input.value.trim();
+    if (!text || !activeContact) return;
+
+    if (await isBlockedByOther(activeContact.uid, currentUser.uid)) {
+      alert('Пользователь заблокировал вас. Вы не можете отправлять сообщения.');
+      return;
     }
 
-    window.startCall = async function(isVideo) {
-      try {
-        localStream = await navigator.mediaDevices.getUserMedia({ video: isVideo, audio: true });
-        document.getElementById('local-video').srcObject = localStream;
-        document.getElementById('call-overlay').style.display = 'flex';
+    input.value = '';
+    const chatId = getChatId(currentUser.uid, activeContact.uid);
 
-        if (isCurrentGroup && currentGroupData) {
-          currentGroupData.members.forEach(memberId => {
-            if (memberId !== currentUser.uid) {
-              const call = peer.call(memberId, localStream);
-              call.on('stream', (remoteStream) => addRemoteVideo(remoteStream));
-            }
-          });
-        } else {
-          const call = peer.call(currentChatId, localStream);
-          call.on('stream', (remoteStream) => addRemoteVideo(remoteStream));
-          currentCall = call;
-        }
-      } catch(e) {
-        alert("Нет доступа к камере/микрофону!");
-      }
+    await db.collection('chats').doc(chatId).collection('messages').add({
+      senderId: currentUser.uid,
+      text: text,
+      type: 'text',
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    await db.collection('chats').doc(chatId).set({
+      participants: [currentUser.uid, activeContact.uid],
+      lastSender: currentUser.uid,
+      unread: true
+    }, { merge: true });
+  }
+
+  async function sendMedia(input) {
+    if (!input.files || !input.files[0] || !activeContact) return;
+    
+    if (await isBlockedByOther(activeContact.uid, currentUser.uid)) {
+      alert('Пользователь заблокировал вас.');
+      return;
     }
 
-    function addRemoteVideo(stream) {
-      const container = document.getElementById('video-container');
-      const vid = document.createElement('video');
-      vid.autoplay = true;
-      vid.srcObject = stream;
-      container.appendChild(vid);
-    }
+    const file = input.files[0];
+    const reader = new FileReader();
+    const isVideo = file.type.startsWith('video');
 
-    window.endCall = function() {
-      if (currentCall) currentCall.close();
-      if (localStream) localStream.getTracks().forEach(track => track.stop());
-      document.getElementById('video-container').innerHTML = '<video id="local-video" autoplay muted></video>';
-      document.getElementById('call-overlay').style.display = 'none';
-    }
-  </script>
+    reader.onload = async function (e) {
+      const dataUrl = e.target.result;
+      const chatId = getChatId(currentUser.uid, activeContact.uid);
+
+      await db.collection('chats').doc(chatId).collection('messages').add({
+        senderId: currentUser.uid,
+        mediaUrl: dataUrl,
+        type: isVideo ? 'video' : 'image',
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      await db.collection('chats').doc(chatId).set({
+        participants: [currentUser.uid, activeContact.uid],
+        lastSender: currentUser.uid,
+        unread: true
+      }, { merge: true });
+    };
+
+    reader.readAsDataURL(file);
+    input.value = '';
+  }
+
+  function toggleMenu() {
+    const menu = document.getElementById('dropdown-menu');
+    menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
+  }
+
+  async function blockUser() {
+    if (!activeContact) return;
+    await db.collection('users').doc(currentUser.uid).collection('blocked').doc(activeContact.uid).set({ blocked: true });
+    alert('Пользователь заблокирован');
+    toggleMenu();
+    checkBlockStatus();
+  }
+
+  async function unblockUser() {
+    if (!activeContact) return;
+    await db.collection('users').doc(currentUser.uid).collection('blocked').doc(activeContact.uid).delete();
+    alert('Пользователь разблокирован');
+    toggleMenu();
+    checkBlockStatus();
+  }
+
+  async function checkBlockStatus() {
+    if (!activeContact) return;
+    const doc = await db.collection('users').doc(currentUser.uid).collection('blocked').doc(activeContact.uid).get();
+    const isBlocked = doc.exists;
+    document.getElementById('block-btn').style.display = isBlocked ? 'none' : 'block';
+    document.getElementById('unblock-btn').style.display = isBlocked ? 'block' : 'none';
+  }
+
+  async function isBlockedByOther(targetUid, myUid) {
+    const doc = await db.collection('users').doc(targetUid).collection('blocked').doc(myUid).get();
+    return doc.exists;
+  }
+
+  function getChatId(uid1, uid2) {
+    return uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`;
+  }
+</script>
 </body>
 </html>
