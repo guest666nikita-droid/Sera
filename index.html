@@ -14,6 +14,9 @@
     body { background: #0f172a; color: #f8fafc; display: flex; justify-content: center; align-items: center; height: 100vh; }
     #app { width: 100%; max-width: 900px; height: 90vh; background: #1e293b; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); overflow: hidden; display: flex; border: 1px solid #334155; }
     
+    /* Avatars */
+    .avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #334155; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #38bdf8; flex-shrink: 0; border: 1px solid #475569; }
+
     /* Login Screen */
     #login-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; height: 100%; gap: 20px; background: #0f172a; }
     #login-screen h1 { color: #38bdf8; font-size: 36px; }
@@ -25,13 +28,17 @@
     
     /* Sidebar */
     .sidebar { width: 320px; border-right: 1px solid #334155; display: flex; flex-direction: column; height: 100%; background: #1e293b; }
-    .sidebar-header { padding: 15px; background: #0f172a; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; }
+    .sidebar-header { padding: 12px 15px; background: #0f172a; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; }
+    .user-profile-info { display: flex; align-items: center; gap: 10px; overflow: hidden; }
+    .user-names { display: flex; flex-direction: column; overflow: hidden; }
+    .user-names b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .search-box { padding: 10px; border-bottom: 1px solid #334155; display: flex; gap: 5px; background: #1e293b; }
     .search-box input { flex: 1; padding: 8px 12px; background: #334155; color: #fff; border: 1px solid #475569; border-radius: 6px; outline: none; }
     .search-box button { padding: 8px 12px; background: #38bdf8; color: #0f172a; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; }
     .contact-list { flex: 1; overflow-y: auto; }
-    .contact-item { padding: 12px; border-bottom: 1px solid #334155; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+    .contact-item { padding: 12px; border-bottom: 1px solid #334155; cursor: pointer; display: flex; align-items: center; gap: 12px; }
     .contact-item:hover { background: #334155; }
+    .contact-info { flex: 1; display: flex; justify-content: space-between; align-items: center; }
     .unread-badge { background: #22c55e; color: white; border-radius: 50%; padding: 2px 8px; font-size: 12px; font-weight: bold; }
 
     /* Chat Area */
@@ -49,15 +56,26 @@
 
     /* Messages List */
     .messages-container { flex: 1; padding: 15px; overflow-y: auto; background: #0b1120; display: flex; flex-direction: column; gap: 10px; }
-    .message { max-width: 65%; padding: 8px 12px; border-radius: 8px; font-size: 14px; word-wrap: break-word; }
-    .message.sent { background: #0369a1; color: #f8fafc; align-self: flex-end; }
-    .message.received { background: #334155; color: #f8fafc; align-self: flex-start; }
+    .message { max-width: 65%; padding: 10px 14px; border-radius: 12px; font-size: 14px; word-wrap: break-word; display: flex; flex-direction: column; }
+    
+    /* Выравнивание сообщений */
+    .message.sent { background: #0369a1; color: #f8fafc; align-self: flex-end; border-bottom-right-radius: 2px; }
+    .message.received { background: #334155; color: #f8fafc; align-self: flex-start; border-bottom-left-radius: 2px; }
 
     /* Input Area */
     .chat-input { padding: 10px; background: #1e293b; border-top: 1px solid #334155; display: flex; gap: 8px; align-items: center; }
     .chat-input input[type="text"] { flex: 1; padding: 10px; background: #334155; color: #fff; border: 1px solid #475569; border-radius: 20px; outline: none; }
     .chat-input button { padding: 8px 15px; background: #38bdf8; color: #0f172a; font-weight: bold; border: none; border-radius: 20px; cursor: pointer; }
     
+    /* Profile Settings Modal */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 1000; }
+    .modal { background: #1e293b; padding: 24px; border-radius: 12px; width: 90%; max-width: 400px; border: 1px solid #475569; display: flex; flex-direction: column; gap: 18px; }
+    .modal h2 { font-size: 20px; color: #38bdf8; }
+    .modal input[type="text"] { padding: 10px; background: #334155; color: #fff; border: 1px solid #475569; border-radius: 6px; outline: none; width: 100%; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+    .btn-primary { padding: 8px 16px; background: #38bdf8; color: #0f172a; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; }
+    .btn-secondary { padding: 8px 16px; background: #475569; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+
     @media (max-width: 768px) {
       .sidebar { width: 100%; }
       .chat-area { display: none; width: 100%; }
@@ -80,8 +98,18 @@
     <!-- Список контактов -->
     <div class="sidebar" id="sidebar">
       <div class="sidebar-header">
-        <b id="user-display-name">Sera User</b>
-        <button onclick="logout()" style="border:none; background:none; color:#ef4444; cursor:pointer; font-weight:bold;">Выйти</button>
+        <div class="user-profile-info">
+          <img id="my-avatar" class="avatar" src="" style="display:none;" />
+          <div id="my-avatar-placeholder" class="avatar">?</div>
+          <div class="user-names">
+            <b id="user-display-name">User</b>
+            <span id="user-email-display" style="font-size:11px; color:#94a3b8;"></span>
+          </div>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <button onclick="openProfileModal()" title="Настройки профиля" style="border:none; background:none; font-size:18px; cursor:pointer; color:#fff;">⚙️</button>
+          <button onclick="logout()" style="border:none; background:none; color:#ef4444; cursor:pointer; font-weight:bold;">Выйти</button>
+        </div>
       </div>
       <div class="search-box">
         <input type="text" id="search-email" placeholder="Поиск по имени или email...">
@@ -95,6 +123,8 @@
       <div class="chat-header">
         <div class="header-left">
           <button class="back-btn" onclick="closeChat()">←</button>
+          <img id="active-contact-avatar" class="avatar" src="" style="display:none; width:34px; height:34px;" />
+          <div id="active-contact-placeholder" class="avatar" style="width:34px; height:34px;">?</div>
           <span id="active-contact-name" style="font-weight:bold;">Выберите чат</span>
         </div>
         <div class="header-actions">
@@ -122,6 +152,28 @@
   </div>
 </div>
 
+<!-- Модальное окно настроек профиля -->
+<div class="modal-overlay" id="profile-modal">
+  <div class="modal">
+    <h2>Настройки профиля</h2>
+    <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
+      <img id="edit-avatar-preview" class="avatar" style="width:80px; height:80px;" src="" />
+      <label class="btn-secondary" style="cursor:pointer; font-size:13px;">
+        Загрузить новую аватарку
+        <input type="file" id="avatar-file-input" accept="image/*" style="display:none;" onchange="previewAvatar(this)">
+      </label>
+    </div>
+    <div>
+      <label style="font-size:12px; color:#94a3b8; display:block; margin-bottom:4px;">Ваше имя</label>
+      <input type="text" id="edit-display-name" placeholder="Введите имя">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeProfileModal()">Отмена</button>
+      <button class="btn-primary" onclick="saveProfile()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
 <script>
   // Конфигурация Firebase
   const firebaseConfig = {
@@ -141,6 +193,7 @@
   let currentUser = null;
   let activeContact = null;
   let messagesUnsubscribe = null;
+  let newAvatarBase64 = null;
 
   function loginWithGoogle() {
     const provider = new firebase.auth.GoogleAuthProvider();
@@ -156,15 +209,20 @@
       currentUser = user;
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('main-screen').style.display = 'flex';
-      document.getElementById('user-display-name').innerText = user.displayName || user.email;
+      
+      const userDocRef = db.collection('users').doc(user.uid);
+      const userDoc = await userDocRef.get();
 
-      await db.collection('users').doc(user.uid).set({
-        uid: user.uid,
-        email: user.email.toLowerCase(),
-        displayName: user.displayName || user.email,
-        photoURL: user.photoURL || ''
-      }, { merge: true });
+      if (!userDoc.exists) {
+        await userDocRef.set({
+          uid: user.uid,
+          email: user.email.toLowerCase(),
+          displayName: user.displayName || user.email,
+          photoURL: user.photoURL || ''
+        });
+      }
 
+      updateUserProfileUI();
       loadContacts();
     } else {
       document.getElementById('login-screen').style.display = 'flex';
@@ -172,44 +230,54 @@
     }
   });
 
-  // Улучшенный поиск по Имени и Email
+  async function updateUserProfileUI() {
+    const doc = await db.collection('users').doc(currentUser.uid).get();
+    const data = doc.data() || {};
+    const name = data.displayName || currentUser.displayName || currentUser.email;
+    const photo = data.photoURL || currentUser.photoURL || '';
+
+    document.getElementById('user-display-name').innerText = name;
+    document.getElementById('user-email-display').innerText = currentUser.email;
+
+    const imgEl = document.getElementById('my-avatar');
+    const placeEl = document.getElementById('my-avatar-placeholder');
+    if (photo) {
+      imgEl.src = photo;
+      imgEl.style.display = 'block';
+      placeEl.style.display = 'none';
+    } else {
+      imgEl.style.display = 'none';
+      placeEl.innerText = name.charAt(0).toUpperCase();
+      placeEl.style.display = 'flex';
+    }
+  }
+
+  // Частичный поиск (полюбая часть имени или email)
   async function searchUser() {
-    const searchInput = document.getElementById('search-email').value.trim();
+    const searchInput = document.getElementById('search-email').value.trim().toLowerCase();
     if (!searchInput) return;
 
-    const lowerInput = searchInput.toLowerCase();
+    const allUsers = await db.collection('users').get();
+    const matches = [];
 
-    // 1. Точное совпадение по email
-    let query = await db.collection('users').where('email', '==', lowerInput).get();
-
-    // 2. Частичное совпадение по имени или email
-    if (query.empty) {
-      const allUsers = await db.collection('users').get();
-      const foundDoc = allUsers.docs.find(doc => {
-        const data = doc.data();
-        if (data.uid === currentUser.uid) return false;
-        
-        const nameMatch = data.displayName && data.displayName.toLowerCase().includes(lowerInput);
-        const emailMatch = data.email && data.email.toLowerCase().includes(lowerInput);
-        return nameMatch || emailMatch;
-      });
-
-      if (foundDoc) {
-        openChat(foundDoc.data());
-        return;
-      }
+    allUsers.forEach(doc => {
+      const data = doc.data();
+      if (data.uid === currentUser.uid) return;
       
+      const nameMatch = data.displayName && data.displayName.toLowerCase().includes(searchInput);
+      const emailMatch = data.email && data.email.toLowerCase().includes(searchInput);
+      
+      if (nameMatch || emailMatch) {
+        matches.push(data);
+      }
+    });
+
+    if (matches.length === 0) {
       alert('Пользователь не найден!');
       return;
     }
 
-    const foundUser = query.docs[0].data();
-    if (foundUser.uid === currentUser.uid) {
-      alert('Нельзя добавить самого себя');
-      return;
-    }
-    
-    openChat(foundUser);
+    openChat(matches[0]);
   }
 
   function loadContacts() {
@@ -234,12 +302,20 @@
           const item = document.createElement('div');
           item.className = 'contact-item';
           item.onclick = () => openChat(userData);
+          
+          const avatarHtml = userData.photoURL 
+            ? `<img class="avatar" src="${userData.photoURL}" />`
+            : `<div class="avatar">${(userData.displayName || 'U').charAt(0).toUpperCase()}</div>`;
+
           item.innerHTML = `
-            <div>
-              <strong>${userData.displayName}</strong>
-              <div style="font-size:12px; color:#94a3b8;">${userData.email}</div>
+            ${avatarHtml}
+            <div class="contact-info">
+              <div>
+                <strong>${userData.displayName}</strong>
+                <div style="font-size:12px; color:#94a3b8;">${userData.email}</div>
+              </div>
+              ${hasUnread ? '<span class="unread-badge">NEW</span>' : ''}
             </div>
-            ${hasUnread ? '<span class="unread-badge">NEW</span>' : ''}
           `;
           contactList.appendChild(item);
         }
@@ -250,6 +326,18 @@
     activeContact = contact;
     document.getElementById('active-contact-name').innerText = contact.displayName;
     
+    const imgEl = document.getElementById('active-contact-avatar');
+    const placeEl = document.getElementById('active-contact-placeholder');
+    if (contact.photoURL) {
+      imgEl.src = contact.photoURL;
+      imgEl.style.display = 'block';
+      placeEl.style.display = 'none';
+    } else {
+      imgEl.style.display = 'none';
+      placeEl.innerText = (contact.displayName || 'U').charAt(0).toUpperCase();
+      placeEl.style.display = 'flex';
+    }
+
     document.getElementById('sidebar').classList.add('hidden');
     document.getElementById('chat-area').classList.add('active');
 
@@ -267,8 +355,11 @@
         container.innerHTML = '';
         snapshot.forEach(doc => {
           const msg = doc.data();
+          const isMe = msg.senderId === currentUser.uid;
           const msgDiv = document.createElement('div');
-          msgDiv.className = `message ${msg.senderId === currentUser.uid ? 'sent' : 'received'}`;
+          
+          // Мои сообщения -> справа (.sent), чужие -> слева (.received)
+          msgDiv.className = `message ${isMe ? 'sent' : 'received'}`;
           
           if (msg.type === 'text') {
             msgDiv.innerText = msg.text;
@@ -297,7 +388,7 @@
     if (!text || !activeContact) return;
 
     if (await isBlockedByOther(activeContact.uid, currentUser.uid)) {
-      alert('Пользователь заблокировал вас. Вы не можете отправлять сообщения.');
+      alert('Пользователь заблокировал вас.');
       return;
     }
 
@@ -352,6 +443,49 @@
     input.value = '';
   }
 
+  // Настройки профиля
+  async function openProfileModal() {
+    const doc = await db.collection('users').doc(currentUser.uid).get();
+    const data = doc.data() || {};
+    document.getElementById('edit-display-name').value = data.displayName || currentUser.displayName || '';
+    document.getElementById('edit-avatar-preview').src = data.photoURL || currentUser.photoURL || '';
+    newAvatarBase64 = null;
+    document.getElementById('profile-modal').style.display = 'flex';
+  }
+
+  function closeProfileModal() {
+    document.getElementById('profile-modal').style.display = 'none';
+  }
+
+  function previewAvatar(input) {
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        newAvatarBase64 = e.target.result;
+        document.getElementById('edit-avatar-preview').src = newAvatarBase64;
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+
+  async function saveProfile() {
+    const newName = document.getElementById('edit-display-name').value.trim();
+    if (!newName) {
+      alert('Имя не может быть пустым!');
+      return;
+    }
+
+    const updateData = { displayName: newName };
+    if (newAvatarBase64) {
+      updateData.photoURL = newAvatarBase64;
+    }
+
+    await db.collection('users').doc(currentUser.uid).set(updateData, { merge: true });
+    updateUserProfileUI();
+    closeProfileModal();
+  }
+
+  // Меню и блокировка
   function toggleMenu() {
     const menu = document.getElementById('dropdown-menu');
     menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
