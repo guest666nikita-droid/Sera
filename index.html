@@ -185,7 +185,6 @@
     import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { getFirestore, collection, doc, setDoc, getDoc, getDocs, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // Ваши ключи
     const firebaseConfig = {
       apiKey: "AIzaSyB8abx-xLG-SUevMlLXVq8ITjHZLkfmacY",
       authDomain: "masenger-656fe.firebaseapp.com",
@@ -199,12 +198,8 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
     
-    // НАСТРОЙКИ АВТОРИЗАЦИИ: Принудительный выбор аккаунта
     const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({
-      prompt: 'select_account' // Заставляет Google ВСЕГДА показывать окно выбора аккаунта
-    });
-    auth.useDeviceLanguage(); // Использовать язык устройства для окна входа
+    provider.setCustomParameters({ prompt: 'select_account' });
 
     let currentUser = null;
     let currentChatId = null;
@@ -217,23 +212,36 @@
     let mediaRecorder = null;
     let recordedChunks = [];
 
-    getRedirectResult(auth).catch(console.error);
+    // Подхватываем результат редиректа после перенаправления авторизации Google
+    getRedirectResult(auth).then((result) => {
+      if (result && result.user) {
+        console.log("Успешный вход через редирект:", result.user);
+      }
+    }).catch((err) => {
+      console.error("Ошибка редиректа:", err);
+    });
 
+    // Отслеживаем статус авторизации (для новых и уже зарегистрированных пользователей)
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         currentUser = user;
-        document.getElementById('user-display').innerText = user.displayName || 'Профиль';
+        document.getElementById('user-display').innerText = user.displayName || user.email || 'Профиль';
         document.getElementById('login-btn').classList.add('hidden');
         document.getElementById('logout-btn').classList.remove('hidden');
         
-        await setDoc(doc(db, "users", user.uid), {
-          uid: user.uid,
-          name: user.displayName || "Аноним",
-          email: user.email,
-          photoURL: user.photoURL || ""
-        }, { merge: true });
+        // Безопасная запись данных профиля с поддержкой существующих аккаунтов
+        try {
+          await setDoc(doc(db, "users", user.uid), {
+            uid: user.uid,
+            name: user.displayName || "Аноним",
+            email: user.email,
+            photoURL: user.photoURL || ""
+          }, { merge: true });
+        } catch (e) {
+          console.error("Ошибка Firestore:", e);
+        }
 
-        initPeerJS();
+        try { initPeerJS(); } catch(e) {}
         loadUsersAndGroups();
       } else {
         currentUser = null;
@@ -243,18 +251,22 @@
       }
     });
 
-    // ФУНКЦИЯ ВХОДА (Сброс старой сессии)
+    // Универсальный метод входа: сперва Popup, при сбое — Redirect
     window.login = async function() {
       try {
-        // Обязательно выходим из текущей сессии Firebase перед новым входом
-        await signOut(auth);
-      } catch (e) {
-        console.error("Ошибка при очистке сессии:", e);
+        await signInWithPopup(auth, provider);
+      } catch (error) {
+        console.warn("Popup не ответил или заблокирован, переключаемся на Redirect...", error);
+        if (error.code === 'auth/unauthorized-domain') {
+          alert("Ошибка: Добавьте домен GitHub Pages в Authorized Domains в Firebase Console!");
+        } else {
+          try {
+            await signInWithRedirect(auth, provider);
+          } catch (redirErr) {
+            alert("Не удалось запустить вход: " + redirErr.message);
+          }
+        }
       }
-
-      // Всегда используем Redirect, так как он гарантированно 
-      // сбрасывает кэш на мобильных устройствах и открывает окно Google
-      signInWithRedirect(auth, provider);
     };
 
     window.logout = function() {
@@ -305,8 +317,8 @@
         item.className = 'chat-item';
         item.onclick = () => openChat(u.uid, u.name, false, u);
         item.innerHTML = `
-          <div class="avatar">${u.photoURL ? `<img src="${u.photoURL}">` : u.name[0]}</div>
-          <div><strong>${u.name}</strong></div>
+          <div class="avatar">${u.photoURL ? `<img src="${u.photoURL}">` : (u.name ? u.name[0] : '?')}</div>
+          <div><strong>${u.name || 'Пользователь'}</strong></div>
         `;
         container.appendChild(item);
       });
@@ -327,7 +339,7 @@
       } else if (!isGroup && data && data.photoURL) {
         avatarEl.innerHTML = `<img src="${data.photoURL}">`;
       } else {
-        avatarEl.innerText = chatName[0];
+        avatarEl.innerText = chatName ? chatName[0] : '?';
       }
 
       if (chatId === 'ai_bot') {
@@ -528,7 +540,7 @@
       
       for (let uid of currentGroupData.members) {
         let name = "Участник";
-        if (uid === currentUser.uid) name = currentUser.displayName + " (Вы)";
+        if (uid === currentUser.uid) name = (currentUser.displayName || "Вы") + " (Вы)";
         else {
           const u = allUsers.find(x => x.uid === uid);
           if (u) name = u.name;
