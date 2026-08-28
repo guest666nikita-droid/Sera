@@ -76,7 +76,6 @@
 </head>
 <body>
 
-  <!-- Sidebar (Главное меню) -->
   <div class="sidebar">
     <div class="header">
       <div class="user-info">
@@ -93,7 +92,6 @@
       <input type="text" id="search-input" placeholder="Поиск контактов..." oninput="searchUsers()">
     </div>
     <div class="chat-list" id="chat-list">
-      <!-- AI Bot Pinned -->
       <div class="chat-item" onclick="openChat('ai_bot', 'Sera AI (Бот)', false)">
         <div class="avatar" style="background:#6f42c1;">🤖</div>
         <div><strong>Sera AI (Бот)</strong><br><small style="color:#aaa;">Нейросеть</small></div>
@@ -102,7 +100,6 @@
     </div>
   </div>
 
-  <!-- Main Chat Screen -->
   <div class="main-chat">
     <div class="chat-header">
       <div class="chat-header-info">
@@ -122,17 +119,14 @@
         </div>
         <button class="btn-icon" onclick="toggleMenu()">⋮</button>
         
-        <!-- 3-Dots Dropdown Menu -->
         <div class="dropdown-menu" id="dropdown-menu">
           <button onclick="blockUser()">🚫 Заблокировать</button>
         </div>
       </div>
     </div>
 
-    <!-- Messages Container -->
     <div class="messages" id="messages"></div>
 
-    <!-- Input Bar -->
     <div class="input-area hidden" id="input-area">
       <label class="btn btn-secondary" title="Отправить фото" style="cursor:pointer;">
         📷 <input type="file" id="photo-input" accept="image/*" style="display:none;" onchange="sendPhoto(this)">
@@ -143,7 +137,6 @@
     </div>
   </div>
 
-  <!-- Modal: Create Group Chat -->
   <div class="modal" id="create-group-modal">
     <div class="modal-content">
       <h3>Создать Групповой Чат</h3>
@@ -158,7 +151,6 @@
     </div>
   </div>
 
-  <!-- Modal: Video Recorder -->
   <div class="modal" id="video-recorder-modal">
     <div class="modal-content" style="align-items: center;">
       <h3>Запись видеосообщения</h3>
@@ -173,7 +165,6 @@
     </div>
   </div>
 
-  <!-- Modal: Group Members List -->
   <div class="modal" id="group-members-modal">
     <div class="modal-content">
       <h3>Участники группы</h3>
@@ -182,7 +173,6 @@
     </div>
   </div>
 
-  <!-- Video/Voice Call Overlay -->
   <div class="call-overlay" id="call-overlay">
     <div class="videos" id="video-container">
       <video id="local-video" autoplay muted></video>
@@ -195,6 +185,7 @@
     import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { getFirestore, collection, doc, setDoc, getDoc, getDocs, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+    // Ваши ключи
     const firebaseConfig = {
       apiKey: "AIzaSyB8abx-xLG-SUevMlLXVq8ITjHZLkfmacY",
       authDomain: "masenger-656fe.firebaseapp.com",
@@ -208,11 +199,12 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
     
-    // Включаем принудительный выбор аккаунта Google
+    // НАСТРОЙКИ АВТОРИЗАЦИИ: Принудительный выбор аккаунта
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({
-      prompt: 'select_account'
+      prompt: 'select_account' // Заставляет Google ВСЕГДА показывать окно выбора аккаунта
     });
+    auth.useDeviceLanguage(); // Использовать язык устройства для окна входа
 
     let currentUser = null;
     let currentChatId = null;
@@ -251,21 +243,25 @@
       }
     });
 
-    window.login = function() {
-      if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-        signInWithRedirect(auth, provider);
-      } else {
-        signInWithPopup(auth, provider).catch(err => {
-          signInWithRedirect(auth, provider);
-        });
+    // ФУНКЦИЯ ВХОДА (Сброс старой сессии)
+    window.login = async function() {
+      try {
+        // Обязательно выходим из текущей сессии Firebase перед новым входом
+        await signOut(auth);
+      } catch (e) {
+        console.error("Ошибка при очистке сессии:", e);
       }
-    }
+
+      // Всегда используем Redirect, так как он гарантированно 
+      // сбрасывает кэш на мобильных устройствах и открывает окно Google
+      signInWithRedirect(auth, provider);
+    };
 
     window.logout = function() {
       signOut(auth).then(() => {
         location.reload();
       });
-    }
+    };
 
     async function loadUsersAndGroups() {
       if (!currentUser) return;
@@ -690,4 +686,3 @@
   </script>
 </body>
 </html>
-
