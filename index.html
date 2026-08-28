@@ -4,44 +4,46 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sera Messenger</title>
-  <!-- Firebase SDK (Compat) -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
     body { background: #0f172a; color: #f8fafc; display: flex; justify-content: center; align-items: center; height: 100vh; }
     #app { width: 100%; max-width: 900px; height: 90vh; background: #1e293b; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); overflow: hidden; display: flex; border: 1px solid #334155; }
     
-    /* Avatars */
+    /* Аватарки */
     .avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #334155; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #38bdf8; flex-shrink: 0; border: 1px solid #475569; }
 
-    /* Login Screen */
+    /* Экран входа */
     #login-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; height: 100%; gap: 20px; background: #0f172a; }
     #login-screen h1 { color: #38bdf8; font-size: 36px; }
     .btn-google { background: #3b82f6; color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 6px; cursor: pointer; transition: 0.2s; }
     .btn-google:hover { background: #2563eb; }
 
-    /* Main Interface */
+    /* Главный интерфейс */
     #main-screen { display: none; width: 100%; height: 100%; }
     
-    /* Sidebar */
+    /* Боковая панель (Контакты) */
     .sidebar { width: 320px; border-right: 1px solid #334155; display: flex; flex-direction: column; height: 100%; background: #1e293b; }
     .sidebar-header { padding: 12px 15px; background: #0f172a; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; }
     .user-profile-info { display: flex; align-items: center; gap: 10px; overflow: hidden; }
     .user-names { display: flex; flex-direction: column; overflow: hidden; }
     .user-names b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    
     .search-box { padding: 10px; border-bottom: 1px solid #334155; display: flex; gap: 5px; background: #1e293b; }
     .search-box input { flex: 1; padding: 8px 12px; background: #334155; color: #fff; border: 1px solid #475569; border-radius: 6px; outline: none; }
     .search-box button { padding: 8px 12px; background: #38bdf8; color: #0f172a; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; }
+    
     .contact-list { flex: 1; overflow-y: auto; }
-    .contact-item { padding: 12px; border-bottom: 1px solid #334155; cursor: pointer; display: flex; align-items: center; gap: 12px; }
+    .contact-item { padding: 12px; border-bottom: 1px solid #334155; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: 0.2s; }
     .contact-item:hover { background: #334155; }
-    .contact-info { flex: 1; display: flex; justify-content: space-between; align-items: center; }
+    .contact-info { flex: 1; display: flex; justify-content: space-between; align-items: center; overflow: hidden; }
     .unread-badge { background: #22c55e; color: white; border-radius: 50%; padding: 2px 8px; font-size: 12px; font-weight: bold; }
 
-    /* Chat Area */
+    /* Область чата */
     .chat-area { flex: 1; display: flex; flex-direction: column; height: 100%; position: relative; background: #0f172a; }
     .chat-header { padding: 12px 15px; background: #1e293b; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
     .header-left { display: flex; align-items: center; gap: 10px; }
@@ -49,25 +51,24 @@
     .header-actions { display: flex; align-items: center; gap: 12px; position: relative; }
     .action-btn { background: none; border: none; font-size: 18px; color: #fff; cursor: pointer; }
     
-    /* Dropdown Menu */
     .dropdown { position: absolute; top: 35px; right: 0; background: #1e293b; border: 1px solid #475569; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); display: none; flex-direction: column; z-index: 100; overflow: hidden; }
     .dropdown button { padding: 10px 15px; background: none; border: none; color: #fff; text-align: left; cursor: pointer; width: 100%; }
     .dropdown button:hover { background: #334155; }
 
-    /* Messages List */
-    .messages-container { flex: 1; padding: 15px; overflow-y: auto; background: #0b1120; display: flex; flex-direction: column; gap: 10px; }
-    .message { max-width: 65%; padding: 10px 14px; border-radius: 12px; font-size: 14px; word-wrap: break-word; display: flex; flex-direction: column; }
+    /* Контейнер сообщений */
+    .messages-container { flex: 1; padding: 15px; overflow-y: auto; background: #0b1120; display: flex; flex-direction: column; gap: 10px; width: 100%; }
+    .message { max-width: 70%; padding: 10px 14px; border-radius: 12px; font-size: 14px; word-wrap: break-word; display: flex; flex-direction: column; }
     
-    /* Выравнивание сообщений */
-    .message.sent { background: #0369a1; color: #f8fafc; align-self: flex-end; border-bottom-right-radius: 2px; }
+    /* Выравнивание: Ваши -> справа, Собеседник -> слева */
+    .message.sent { background: #0284c7; color: #ffffff; align-self: flex-end; border-bottom-right-radius: 2px; }
     .message.received { background: #334155; color: #f8fafc; align-self: flex-start; border-bottom-left-radius: 2px; }
 
-    /* Input Area */
+    /* Поле ввода */
     .chat-input { padding: 10px; background: #1e293b; border-top: 1px solid #334155; display: flex; gap: 8px; align-items: center; }
-    .chat-input input[type="text"] { flex: 1; padding: 10px; background: #334155; color: #fff; border: 1px solid #475569; border-radius: 20px; outline: none; }
-    .chat-input button { padding: 8px 15px; background: #38bdf8; color: #0f172a; font-weight: bold; border: none; border-radius: 20px; cursor: pointer; }
+    .chat-input input[type="text"] { flex: 1; padding: 10px 14px; background: #334155; color: #fff; border: 1px solid #475569; border-radius: 20px; outline: none; }
+    .chat-input button { padding: 8px 16px; background: #38bdf8; color: #0f172a; font-weight: bold; border: none; border-radius: 20px; cursor: pointer; }
     
-    /* Profile Settings Modal */
+    /* Модальное окно настроек */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 1000; }
     .modal { background: #1e293b; padding: 24px; border-radius: 12px; width: 90%; max-width: 400px; border: 1px solid #475569; display: flex; flex-direction: column; gap: 18px; }
     .modal h2 { font-size: 20px; color: #38bdf8; }
@@ -102,7 +103,7 @@
           <img id="my-avatar" class="avatar" src="" style="display:none;" />
           <div id="my-avatar-placeholder" class="avatar">?</div>
           <div class="user-names">
-            <b id="user-display-name">User</b>
+            <b id="user-display-name">Загрузка...</b>
             <span id="user-email-display" style="font-size:11px; color:#94a3b8;"></span>
           </div>
         </div>
@@ -112,13 +113,13 @@
         </div>
       </div>
       <div class="search-box">
-        <input type="text" id="search-email" placeholder="Поиск по имени или email...">
+        <input type="text" id="search-email" placeholder="Частичный поиск (имя / email)...">
         <button onclick="searchUser()">Найти</button>
       </div>
       <div class="contact-list" id="contact-list"></div>
     </div>
 
-    <!-- Чат -->
+    <!-- Область Чат -->
     <div class="chat-area" id="chat-area">
       <div class="chat-header">
         <div class="header-left">
@@ -128,7 +129,7 @@
           <span id="active-contact-name" style="font-weight:bold;">Выберите чат</span>
         </div>
         <div class="header-actions">
-          <button class="action-btn" title="Обычный звонок" onclick="alert('Вызов голосом...')">📞</button>
+          <button class="action-btn" title="Обычный звонок" onclick="alert('Вызов...')">📞</button>
           <button class="action-btn" title="Видеозвонок" onclick="alert('Видеовызов...')">📹</button>
           <button class="action-btn" onclick="toggleMenu()">⋮</button>
           <div class="dropdown" id="dropdown-menu">
@@ -141,11 +142,11 @@
       <div class="messages-container" id="messages-container"></div>
 
       <div class="chat-input" id="chat-input-bar">
-        <label style="cursor:pointer; font-size: 20px;" title="Отправить фото/видео с камеры">
+        <label style="cursor:pointer; font-size: 20px;" title="Отправить медиа">
           📷
           <input type="file" id="media-input" accept="image/*,video/*" capture="user" style="display:none;" onchange="sendMedia(this)">
         </label>
-        <input type="text" id="message-text" placeholder="Сообщение..." onkeypress="if(event.key==='Enter') sendMessage()">
+        <input type="text" id="message-text" placeholder="Напишите сообщение..." onkeypress="if(event.key==='Enter') sendMessage()">
         <button onclick="sendMessage()">Отправить</button>
       </div>
     </div>
@@ -159,12 +160,12 @@
     <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
       <img id="edit-avatar-preview" class="avatar" style="width:80px; height:80px;" src="" />
       <label class="btn-secondary" style="cursor:pointer; font-size:13px;">
-        Загрузить новую аватарку
+        Выбрать аватарку
         <input type="file" id="avatar-file-input" accept="image/*" style="display:none;" onchange="previewAvatar(this)">
       </label>
     </div>
     <div>
-      <label style="font-size:12px; color:#94a3b8; display:block; margin-bottom:4px;">Ваше имя</label>
+      <label style="font-size:12px; color:#94a3b8; display:block; margin-bottom:4px;">Ваше кастомное имя</label>
       <input type="text" id="edit-display-name" placeholder="Введите имя">
     </div>
     <div class="modal-actions">
@@ -193,6 +194,8 @@
   let currentUser = null;
   let activeContact = null;
   let messagesUnsubscribe = null;
+  let activeContactUnsubscribe = null;
+  let myProfileUnsubscribe = null;
   let newAvatarBase64 = null;
 
   function loginWithGoogle() {
@@ -222,19 +225,25 @@
         });
       }
 
-      updateUserProfileUI();
+      // Real-time подписка на собственный профиль
+      if (myProfileUnsubscribe) myProfileUnsubscribe();
+      myProfileUnsubscribe = userDocRef.onSnapshot(snapshot => {
+        if (snapshot.exists) {
+          updateMyProfileUI(snapshot.data());
+        }
+      });
+
       loadContacts();
     } else {
       document.getElementById('login-screen').style.display = 'flex';
       document.getElementById('main-screen').style.display = 'none';
+      if (myProfileUnsubscribe) myProfileUnsubscribe();
     }
   });
 
-  async function updateUserProfileUI() {
-    const doc = await db.collection('users').doc(currentUser.uid).get();
-    const data = doc.data() || {};
-    const name = data.displayName || currentUser.displayName || currentUser.email;
-    const photo = data.photoURL || currentUser.photoURL || '';
+  function updateMyProfileUI(data) {
+    const name = data.displayName || currentUser.email;
+    const photo = data.photoURL || '';
 
     document.getElementById('user-display-name').innerText = name;
     document.getElementById('user-email-display').innerText = currentUser.email;
@@ -252,7 +261,7 @@
     }
   }
 
-  // Частичный поиск (полюбая часть имени или email)
+  // Поиск по имени или email (частичное совпадение)
   async function searchUser() {
     const searchInput = document.getElementById('search-email').value.trim().toLowerCase();
     if (!searchInput) return;
@@ -280,6 +289,7 @@
     openChat(matches[0]);
   }
 
+  // Загрузка контактов с живыми обновлениями аватарок и имен
   function loadContacts() {
     db.collection('chats')
       .where('participants', 'array-contains', currentUser.uid)
@@ -293,6 +303,7 @@
           
           if (!otherUserId) continue;
 
+          // Подтягиваем данные собеседника
           const userDoc = await db.collection('users').doc(otherUserId).get();
           if (!userDoc.exists) continue;
           const userData = userDoc.data();
@@ -310,8 +321,8 @@
           item.innerHTML = `
             ${avatarHtml}
             <div class="contact-info">
-              <div>
-                <strong>${userData.displayName}</strong>
+              <div style="overflow:hidden;">
+                <strong style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;">${userData.displayName || userData.email}</strong>
                 <div style="font-size:12px; color:#94a3b8;">${userData.email}</div>
               </div>
               ${hasUnread ? '<span class="unread-badge">NEW</span>' : ''}
@@ -322,12 +333,73 @@
       });
   }
 
-  async function openChat(contact) {
+  // Открытие чата и подписка на сообщения и изменения собеседника
+  function openChat(contact) {
     activeContact = contact;
-    document.getElementById('active-contact-name').innerText = contact.displayName;
-    
+
+    // Живая подписка на профиль собеседника (чтобы имя и аватарка обновлялись сразу)
+    if (activeContactUnsubscribe) activeContactUnsubscribe();
+    activeContactUnsubscribe = db.collection('users').doc(contact.uid).onSnapshot(doc => {
+      if (doc.exists) {
+        activeContact = doc.data();
+        renderChatHeader(activeContact);
+      }
+    });
+
+    document.getElementById('sidebar').classList.add('hidden');
+    document.getElementById('chat-area').classList.add('active');
+
+    checkBlockStatus();
+
+    const chatId = getChatId(currentUser.uid, activeContact.uid);
+    db.collection('chats').doc(chatId).set({ unread: false }, { merge: true });
+
+    // Слушатель сообщений
+    if (messagesUnsubscribe) messagesUnsubscribe();
+    messagesUnsubscribe = db.collection('chats').doc(chatId)
+      .collection('messages')
+      .onSnapshot(snapshot => {
+        const container = document.getElementById('messages-container');
+        container.innerHTML = '';
+
+        // Сортировка на стороне клиента для исключения багов с serverTimestamp
+        const messages = [];
+        snapshot.forEach(doc => {
+          messages.push(doc.data());
+        });
+
+        messages.sort((a, b) => {
+          const timeA = a.timestamp ? a.timestamp.toMillis() : Date.now();
+          const timeB = b.timestamp ? b.timestamp.toMillis() : Date.now();
+          return timeA - timeB;
+        });
+
+        messages.forEach(msg => {
+          const isMe = msg.senderId === currentUser.uid;
+          const msgDiv = document.createElement('div');
+          
+          // ВАЖНО: Ваши -> справа (.sent), собеседника -> слева (.received)
+          msgDiv.className = `message ${isMe ? 'sent' : 'received'}`;
+          
+          if (msg.type === 'text') {
+            msgDiv.innerText = msg.text;
+          } else if (msg.type === 'image') {
+            msgDiv.innerHTML = `<img src="${msg.mediaUrl}" style="max-width:220px; border-radius:6px;">`;
+          } else if (msg.type === 'video') {
+            msgDiv.innerHTML = `<video src="${msg.mediaUrl}" controls style="max-width:220px; border-radius:6px;"></video>`;
+          }
+          
+          container.appendChild(msgDiv);
+        });
+        container.scrollTop = container.scrollHeight;
+      });
+  }
+
+  function renderChatHeader(contact) {
+    document.getElementById('active-contact-name').innerText = contact.displayName || contact.email;
     const imgEl = document.getElementById('active-contact-avatar');
     const placeEl = document.getElementById('active-contact-placeholder');
+
     if (contact.photoURL) {
       imgEl.src = contact.photoURL;
       imgEl.style.display = 'block';
@@ -337,42 +409,6 @@
       placeEl.innerText = (contact.displayName || 'U').charAt(0).toUpperCase();
       placeEl.style.display = 'flex';
     }
-
-    document.getElementById('sidebar').classList.add('hidden');
-    document.getElementById('chat-area').classList.add('active');
-
-    checkBlockStatus();
-
-    const chatId = getChatId(currentUser.uid, activeContact.uid);
-    await db.collection('chats').doc(chatId).set({ unread: false }, { merge: true });
-
-    if (messagesUnsubscribe) messagesUnsubscribe();
-    messagesUnsubscribe = db.collection('chats').doc(chatId)
-      .collection('messages')
-      .orderBy('timestamp', 'asc')
-      .onSnapshot(snapshot => {
-        const container = document.getElementById('messages-container');
-        container.innerHTML = '';
-        snapshot.forEach(doc => {
-          const msg = doc.data();
-          const isMe = msg.senderId === currentUser.uid;
-          const msgDiv = document.createElement('div');
-          
-          // Мои сообщения -> справа (.sent), чужие -> слева (.received)
-          msgDiv.className = `message ${isMe ? 'sent' : 'received'}`;
-          
-          if (msg.type === 'text') {
-            msgDiv.innerText = msg.text;
-          } else if (msg.type === 'image') {
-            msgDiv.innerHTML = `<img src="${msg.mediaUrl}" style="max-width:200px; border-radius:6px;">`;
-          } else if (msg.type === 'video') {
-            msgDiv.innerHTML = `<video src="${msg.mediaUrl}" controls style="max-width:200px; border-radius:6px;"></video>`;
-          }
-          
-          container.appendChild(msgDiv);
-        });
-        container.scrollTop = container.scrollHeight;
-      });
   }
 
   function closeChat() {
@@ -380,6 +416,7 @@
     document.getElementById('chat-area').classList.remove('active');
     activeContact = null;
     if (messagesUnsubscribe) messagesUnsubscribe();
+    if (activeContactUnsubscribe) activeContactUnsubscribe();
   }
 
   async function sendMessage() {
@@ -395,6 +432,7 @@
     input.value = '';
     const chatId = getChatId(currentUser.uid, activeContact.uid);
 
+    // 1. Добавляем сообщение
     await db.collection('chats').doc(chatId).collection('messages').add({
       senderId: currentUser.uid,
       text: text,
@@ -402,6 +440,7 @@
       timestamp: firebase.firestore.FieldValue.serverTimestamp()
     });
 
+    // 2. Обновляем диалог с привязкой участников
     await db.collection('chats').doc(chatId).set({
       participants: [currentUser.uid, activeContact.uid],
       lastSender: currentUser.uid,
@@ -481,11 +520,10 @@
     }
 
     await db.collection('users').doc(currentUser.uid).set(updateData, { merge: true });
-    updateUserProfileUI();
     closeProfileModal();
   }
 
-  // Меню и блокировка
+  // Блокировка и меню
   function toggleMenu() {
     const menu = document.getElementById('dropdown-menu');
     menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
@@ -526,4 +564,3 @@
 </script>
 </body>
 </html>
-
